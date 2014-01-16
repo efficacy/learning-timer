@@ -6,6 +6,10 @@
  timer, you can run it for that duration any time you like by pressing the RUN button. 
  At the end of the learned time, the buzzer wil sound. Simple
  
+ If you connect 8 LEDS to pins 0-7 they will indicate the state of the system. While learning,
+ a dot will "walk" along the array. While running, a "solid" bar will steadily decrease until
+ the buzzer sounds. It's worth it, it looks neat.
+
  The circuit:
  * LEARN button (active HIGH) attached to pin 8
  * LEARN button (active HIGH) attached to pin 9
@@ -14,14 +18,12 @@
  
  */
 
-// constants won't change. They're used here to 
-// set pin numbers:
 const int learnButton = 8;
 const int runButton = 9;
 const int buzzPin =  10;
 enum { WAITING, LEARN_START_PRESS, LEARNING, LEARN_END_PRESS, RUN_PRESS, RUNNING } state;
 
-const unsigned int tick = 100; // ms
+const unsigned int tick = 200; // ms
 const unsigned int ticksPerSecond = 1000 / tick;
 const unsigned int buzzFreq = 1000;
 const unsigned long buzzDuration = 500;
@@ -49,9 +51,6 @@ void bar() {
 }
 
 void setup() {
-//  Serial.begin(9600); // send and receive at 9600 baud
-//  Serial.println("start");
-
   for (int i = 0; i < 8; ++i) {
     pinMode(i, OUTPUT);
   }
@@ -73,32 +72,24 @@ void loop(){
   switch (state) {
     case WAITING:
       if (digitalRead(learnButton) == HIGH) {
-//        Serial.println("WAITING, press LEARN");
         state = LEARN_START_PRESS;
       } else if (digitalRead(runButton) == HIGH) {
-//        Serial.println("WAITING, press RUN");
         state = RUN_PRESS;
       }
       break;
     case LEARN_START_PRESS:
       if (digitalRead(learnButton) == LOW) {
-//        Serial.println("LEARN_START_PRESS, release LEARN");
         state = LEARNING;
         count = 0;
       }
     case LEARNING:
       hop();
       if (digitalRead(learnButton) == HIGH) {
-//        Serial.println("LEARNING, press LEARN");
         state = LEARN_END_PRESS;
       }
       break;
     case LEARN_END_PRESS:
       if (digitalRead(learnButton) == LOW) {
-//        Serial.println("LEARN_END_PRESS, release LEARN");
-//        Serial.print("learned ");
-//        Serial.print(count);
-//        Serial.println(" ticks");
         state = WAITING;
         goal = count;
         count = 0;
@@ -107,7 +98,6 @@ void loop(){
       break;
     case RUN_PRESS:
       if (digitalRead(runButton) == LOW) {
-//        Serial.println("RUN_PRESS, release RUN");
         state = RUNNING;
         count = 0;
       }
@@ -115,9 +105,6 @@ void loop(){
     case RUNNING:
       bar();
       if (count >= goal) {
-//        Serial.print("ran ");
-//        Serial.print(count);
-//        Serial.println(" ticks");
         state = WAITING;
         tone(buzzPin, buzzFreq, buzzDuration);
         count = 0;
