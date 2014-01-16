@@ -6,6 +6,9 @@
  timer, you can run it for that duration any time you like by pressing the RUN button. 
  At the end of the learned time, the buzzer wil sound. Simple.
  
+ This code is particularly useful on a system without an accurate clock, as it is
+ completely self-calibrating
+
  As a bonus, if you connect 8 LEDS to pins 0-7 they will indicate the state of the system.
  While learning, a dot will "walk" along the array. While running, a "solid" bar will
  steadily decrease until the buzzer sounds. It's worth it, it looks neat.
