@@ -29,11 +29,34 @@ const unsigned long buzzDuration = 500;
 long goal;
 long count;
 
-void setup() {
+void clear_dots() {
   for (int i = 0; i < 8; ++i) {
-    pinMode(i, OUTPUT);
     digitalWrite(i, HIGH);
   }
+}  
+
+// 'hop' a LED along to show learning state
+int dot = 0;
+void hop() {
+  for (int i = 0; i < 8; ++i) digitalWrite(i, i == dot ? LOW : HIGH);
+  dot = (dot + 1) % 8;
+}
+
+void bar() {
+  float progress = count / (goal * 1.0);
+  int dots = (int)(8 * progress);
+  for (int i = 0; i < 8; ++i) digitalWrite(i, i < dots ? HIGH : LOW);
+}
+
+void setup() {
+//  Serial.begin(9600); // send and receive at 9600 baud
+//  Serial.println("start");
+
+  for (int i = 0; i < 8; ++i) {
+    pinMode(i, OUTPUT);
+  }
+  clear_dots();
+  
   pinMode(learnButton, INPUT);
   pinMode(runButton, INPUT);
   pinMode(buzzPin, OUTPUT);
@@ -41,67 +64,60 @@ void setup() {
   goal = 10 * ticksPerSecond; // for now, delay 10s
   count = 0;
   state = WAITING;
-  
-  Serial.begin(9600); // send and receive at 9600 baud
-  Serial.println("start");
 }
 
 void loop(){
   delay(tick);
   ++count;
-  for (int i = 0; i < 8; ++i) digitalWrite(i, HIGH);
   
   switch (state) {
     case WAITING:
-      digitalWrite(0, LOW);
       if (digitalRead(learnButton) == HIGH) {
-        Serial.println("WAITING, press LEARN");
+//        Serial.println("WAITING, press LEARN");
         state = LEARN_START_PRESS;
       } else if (digitalRead(runButton) == HIGH) {
-        Serial.println("WAITING, press RUN");
+//        Serial.println("WAITING, press RUN");
         state = RUN_PRESS;
       }
       break;
     case LEARN_START_PRESS:
-      digitalWrite(1, LOW);
       if (digitalRead(learnButton) == LOW) {
-        Serial.println("LEARN_START_PRESS, release LEARN");
+//        Serial.println("LEARN_START_PRESS, release LEARN");
         state = LEARNING;
         count = 0;
       }
     case LEARNING:
-      digitalWrite(2, LOW);
+      hop();
       if (digitalRead(learnButton) == HIGH) {
-        Serial.println("LEARNING, press LEARN");
+//        Serial.println("LEARNING, press LEARN");
         state = LEARN_END_PRESS;
       }
       break;
     case LEARN_END_PRESS:
-      digitalWrite(3, LOW);
       if (digitalRead(learnButton) == LOW) {
-        Serial.println("LEARN_END_PRESS, release LEARN");
-        Serial.print("learned ");
-        Serial.print(count);
-        Serial.println(" ticks");
+//        Serial.println("LEARN_END_PRESS, release LEARN");
+//        Serial.print("learned ");
+//        Serial.print(count);
+//        Serial.println(" ticks");
         state = WAITING;
         goal = count;
         count = 0;
+        clear_dots();
       }
       break;
     case RUN_PRESS:
-      digitalWrite(4, LOW);
       if (digitalRead(runButton) == LOW) {
-        Serial.println("RUN_PRESS, release RUN");
+//        Serial.println("RUN_PRESS, release RUN");
         state = RUNNING;
         count = 0;
       }
       break;
     case RUNNING:
-      digitalWrite(5, LOW);
+      bar();
       if (count >= goal) {
-        Serial.print("ran ");
-        Serial.print(count);
-        Serial.println(" ticks");
+//        Serial.print("ran ");
+//        Serial.print(count);
+//        Serial.println(" ticks");
         state = WAITING;
         tone(buzzPin, buzzFreq, buzzDuration);
         count = 0;
