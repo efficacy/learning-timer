@@ -22,6 +22,8 @@
  Frank Carver, January 2014
  */
 
+#include <EEPROM.h>
+
 const int learnButton = 8;
 const int runButton = 9;
 const int buzzPin =  10;
@@ -41,6 +43,22 @@ const int ledDutyCyclePercent = 50;
 long goal;
 long count;
 long next_tick;
+
+void ee_write_long(int ee, long value) {
+  const byte* p = (const byte*)(const void*)&value;
+  unsigned int i;
+  for (i = 0; i < sizeof(value); i++)
+    EEPROM.write(ee++, *p++);
+}
+
+long ee_read_long(int ee) {
+  long value;
+  byte* p = (byte*)(void*)&value;
+  unsigned int i;
+  for (i = 0; i < sizeof(value); i++)
+    *p++ = EEPROM.read(ee++);
+  return value;
+}
 
 void clear_dots() {
   for (int i = 0; i < 8; ++i) {
@@ -71,7 +89,7 @@ void setup() {
   pinMode(runButton, INPUT);
   pinMode(buzzPin, OUTPUT);
   
-  goal = 10 * ticksPerSecond; // for now, delay 10s
+  goal = ee_read_long(0);
   count = 0;
   state = WAITING;
 }
@@ -105,6 +123,7 @@ void loop(){
       if (digitalRead(learnButton) == LOW) {
         state = WAITING;
         goal = count;
+        ee_write_long(0, goal);
         count = 0;
         clear_dots();
       }
