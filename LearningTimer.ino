@@ -34,6 +34,10 @@ const unsigned int ticksPerSecond = 1000 / tick;
 const unsigned int buzzFreq = 1000;
 const unsigned long buzzDuration = 500;
 
+// The LED array is the biggest power draw, so we can save juice by not switching them on all the time
+// this uses a relatively crude PWM while waiting
+const int ledDutyCyclePercent = 50;
+
 long goal;
 long count;
 long next_tick;
@@ -45,16 +49,16 @@ void clear_dots() {
 }  
 
 // 'hop' a LED along to show learning state
-int dot = 0;
+int hop_dot = 0;
 void hop() {
-  for (int i = 0; i < 8; ++i) digitalWrite(i, i == dot ? LOW : HIGH);
-  dot = (dot + 1) % 8;
+  hop_dot = (hop_dot + 1) % 8;
 }
 
+// "count down" a bar from all to 0
+int bar_dots;
 void bar() {
   float progress = count / (goal * 1.0);
-  int dots = (int)(8 * progress);
-  for (int i = 7; i >= 0; --i) digitalWrite(i, i < dots ? HIGH : LOW);
+  bar_dots = (int)(8 * progress);
 }
 
 void setup() {
@@ -86,7 +90,7 @@ void loop(){
     case LEARN_START_PRESS:
       if (digitalRead(learnButton) == LOW) {
         state = LEARNING;
-        dot = 0;
+        hop_dot = 0;
         count = 0;
       }
       break;
@@ -94,6 +98,7 @@ void loop(){
       hop();
       if (digitalRead(learnButton) == HIGH) {
         state = LEARN_END_PRESS;
+        clear_dots();
       }
       break;
     case LEARN_END_PRESS:
@@ -113,6 +118,7 @@ void loop(){
     case RUNNING:
       bar();
       if (count >= goal) {
+        clear_dots();
         state = WAITING;
         tone(buzzPin, buzzFreq, buzzDuration);
         count = 0;
@@ -120,7 +126,16 @@ void loop(){
       break;
   }
 
-  while (millis() < next_tick) 
-    ;
+  long tickle = 0;
+  while (millis() < next_tick) {
+    int pc = tickle++ % 100;
+    int show = pc <= ledDutyCyclePercent ? LOW : HIGH;
+    if (state == RUNNING) {
+      for (int i = 7; i >= 0; --i) digitalWrite(i, i < bar_dots ? HIGH : show);
+    } else if (state == LEARNING) {
+      for (int i = 0; i < 8; ++i) digitalWrite(i, i == hop_dot ? show : HIGH);
+    }
+  }
+  
   ++count;
 }
